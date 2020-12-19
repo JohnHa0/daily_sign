@@ -16,6 +16,7 @@ const $ = new Env('多点');
 let cookiesArr = [], cookie = '';
 let urlAddress = [], address ='';
 let nickName,title, desc='';
+$.nickName=''
 const notify = $.isNode() ? require('./sendNotify') : '';
 // 查询是否有sendNotify模块并赋予isNode()
 // cookie='addr=%E5%8C%97%E4%BA%AC%E5%B8%82%E8%A5%BF%E5%9F%8E%E5%8C%BA%E6%9C%A8%E6%A8%A8%E5%9C%B0%E5%8D%97%E9%87%8C16%E5%8F%B7%E6%A5%BC; addrId=; appMode=online; appVersion=4.9.0; areaId=110102; bigdata=; businessCode=1; community=%E6%9C%A8%E6%A8%A8%E5%9C%B0%E5%8D%97%E9%87%8C16%E5%8F%B7%E6%A5%BC; env=app; first_session_time=1606190484894; lat=39.899322; lng=116.336788; platform=IOS; platformStoreGroup=; platformStoreGroupKey=efaf5399a75925c2dd91ae5776a64c9d@MjU4LTE3NjUz; recommend=1; session_count=8; session_id=9ED75478213A48DFA330BB4F58BD8438; storeGroupKey=ae258cb30030b4fa63f6eef5929faad9@MS0xMDgtMQ; storeGroupV4=; storeGroupV4_encode=; storeId=108; store_id=108; tdc=; tempid=C92DC195EEE00002B27DAB5028008B00; ticketName=9BDE712C8CF5AF5E618DDF150B0E5797DB4F886DE66CDE5716241166EB65E134A92D5766B8087AC2449872CB21139363987A1354071DCAD85E290F3ECF1FDA61E3B8C8A2EF328D11CB511E29DC9844C672CB190B090E62C59D3416768E0DEECDF50612F8F24D63EADD01C11C1C5D5CA701BF9415DD8AAC17710F8909B1FECFBD; token=b1487ad6-57da-44d1-9554-b3e2336dc6f4; userId=205271280; uuid=99ea1865728b84932885e13f1fe3fa027fad4cf6; venderId=1; vender_id=1; webViewType=wkwebview'
@@ -62,6 +63,7 @@ if (process.env.dmCookie) {
             cookie = cookiesArr[i];
             address = urlAddress[i]
             nickName=address.match(/phone=(.+?)&/)[1]
+            $.nickName = nickName
             $.index = i + 1;
             console.log('【账号'+nickName.toString()+'】:\n');
             await signIn();
@@ -136,7 +138,7 @@ function showMsg() {
         if(title){
             $.sub = title
             $.desc = desc
-            $.msg("多点账号:"+nickname,$.sub,$.desc)
+            $.msg("多点账号"+$.nickName,$.sub,$.desc)
         }
         resolve()
     })
