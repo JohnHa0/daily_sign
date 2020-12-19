@@ -63,11 +63,11 @@ if (process.env.dmCookie) {
             address = urlAddress[i]
             nickName=address.match(/phone=(.+?)&/)[1]
             $.index = i + 1;
-            console.log('【账号'+nickName+'】:\n');
+            console.log('【账号'+nickName.toString()+'】:\n');
             await signIn();
             await showMsg();
             if ($.isNode()){
-                await notify.sendNotify("账号:"+nickName,$.sub+"\n"+$.desc)
+                await notify.sendNotify("账号:"+nickName.toString(),$.sub+"\n"+$.desc)
             }
         }
     }
