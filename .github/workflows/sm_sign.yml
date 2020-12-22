@@ -6,7 +6,7 @@ name: sm_sign
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 21 * * *'
+    - cron: '30 9,23 * * *'
   watch:
     types: started
   repository_dispatch:
