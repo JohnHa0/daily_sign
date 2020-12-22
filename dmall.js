@@ -15,8 +15,10 @@ BARK_PUSH -->> BARK 推送
 const $ = new Env('多点');
 let cookiesArr = [], cookie = '';
 let urlAddress = [], address ='';
+let query_add,query = '';
 let nickName,title, desc='';
-$.nickName=''
+let totalScore,continueDay,totalDay=0;
+let ttReward = [3,7,21,25,31], cnReward = [2,5,10,15];
 const notify = $.isNode() ? require('./sendNotify') : '';
 // 查询是否有sendNotify模块并赋予isNode()
 // cookie='addr=%E5%8C%97%E4%BA%AC%E5%B8%82%E8%A5%BF%E5%9F%8E%E5%8C%BA%E6%9C%A8%E6%A8%A8%E5%9C%B0%E5%8D%97%E9%87%8C16%E5%8F%B7%E6%A5%BC; addrId=; appMode=online; appVersion=4.9.0; areaId=110102; bigdata=; businessCode=1; community=%E6%9C%A8%E6%A8%A8%E5%9C%B0%E5%8D%97%E9%87%8C16%E5%8F%B7%E6%A5%BC; env=app; first_session_time=1606190484894; lat=39.899322; lng=116.336788; platform=IOS; platformStoreGroup=; platformStoreGroupKey=efaf5399a75925c2dd91ae5776a64c9d@MjU4LTE3NjUz; recommend=1; session_count=8; session_id=9ED75478213A48DFA330BB4F58BD8438; storeGroupKey=ae258cb30030b4fa63f6eef5929faad9@MS0xMDgtMQ; storeGroupV4=; storeGroupV4_encode=; storeId=108; store_id=108; tdc=; tempid=C92DC195EEE00002B27DAB5028008B00; ticketName=9BDE712C8CF5AF5E618DDF150B0E5797DB4F886DE66CDE5716241166EB65E134A92D5766B8087AC2449872CB21139363987A1354071DCAD85E290F3ECF1FDA61E3B8C8A2EF328D11CB511E29DC9844C672CB190B090E62C59D3416768E0DEECDF50612F8F24D63EADD01C11C1C5D5CA701BF9415DD8AAC17710F8909B1FECFBD; token=b1487ad6-57da-44d1-9554-b3e2336dc6f4; userId=205271280; uuid=99ea1865728b84932885e13f1fe3fa027fad4cf6; venderId=1; vender_id=1; webViewType=wkwebview'
@@ -35,7 +37,7 @@ if (process.env.dmCookie) {
     console.log(`\n====================共有${cookiesArr.length}个账号Cookie=========\n`);
 }
 
-
+let queryHD="https://appapis.dmall.com/static/queryUserCheckInfo.jsonp?callback";
 // URLS 请用@隔开
     if (process.env.signAddress) {
         if (process.env.dmCookie.indexOf('@') > -1) {
@@ -46,13 +48,6 @@ if (process.env.dmCookie) {
         }
     }
 
-
-
-
-
-
-
-
 !(async () => {
     if (!cookiesArr[0]) {
         $.msg('【提示】请先获取签到Token');
@@ -61,15 +56,17 @@ if (process.env.dmCookie) {
     for (let i = 0; i < cookiesArr.length; i++) {
         if (cookiesArr[i]) {
             cookie = cookiesArr[i];
-            address = urlAddress[i]
+            address = urlAddress[i];
+            //获取查询地址
+            query_add=queryHD+address.split("callback")[1];
             nickName=address.match(/phone=(.+?)&/)[1]
-            $.nickName = nickName
             $.index = i + 1;
-            console.log('【账号'+nickName.toString()+'】:\n');
+            console.log('【账号'+nickName+'】:\n');
             await signIn();
+            await checkIn();
             await showMsg();
             if ($.isNode()){
-                await notify.sendNotify("账号:"+nickName.toString(),$.sub+"\n"+$.desc)
+                await notify.sendNotify("账号:"+nickName,$.sub+"\n"+$.desc)
             }
         }
     }
@@ -95,7 +92,8 @@ function signIn() {
                         if (safeGet(dt)){
                             dt=JSON.parse(dt)
                             signReward=dt.signInRewardInfoVOs[0]
-                            title =dt.title+"!"+dt.subTitle+":"
+                            // title =dt.title+"!"+dt.subTitle+":"
+                            title =dt.title+"!"
                             desc = "获取"+signReward.rewardType+"积分,请在"+signReward.rewardValidityDate+"."
                         }else {
                             title = '签到结果：失败'
@@ -132,13 +130,68 @@ function taskUrl() {
     }
 }
 
+function checkIn() {
+    return new Promise(resolve => {
+        $.get(queryUrl(), (err, resp, signData) => {
+            try {
+                if (err) {
+                    console.log(`${JSON.stringify(err)}`)
+                    console.log(`${$.name} API请求失败，请检查网路重试`)
+                } else {
+                    if (signData) {
+                        //抽取签到信息
+                        //获取scores
+                        totalScore = signData.match(/score.+?(\d+?),/)[1]
+                        //获取签到天数
+                        totalDay = signData.match(/currentMonthAddUpDays.+?(\d)/)[1]
+                        //获取连续签到天数
+                        continueDay = signData.match(/currentMonthContinuousDays.+?(\d)/)[1]
+                        if (ttReward.toString().indexOf(totalDay) == -1 ){
+                            totalReward=""
+                        }else{
+                            totalReward = "请手动领取累计"+totalDay+"天奖励！"
+                        }
+                        if (cnReward.toString().indexOf(continueDay==-1)){
+                            continueReward = ""
+                        }else {
+                            continueReward ="请手动领取连签"+continueDay+"天奖励"
+                        }
+                        title = title + continueReward + totalReward + "."
+                        desc = desc + "\n" + "连续签到"+ continueDay +"天"+"(累计"+ totalDay +"天)" +"\n" + "账户总积分:" +totalScore
+
+                    }
+                }
+            } catch (e) {
+                $.logErr(e, resp)
+            } finally {
+                resolve();
+            }
+        })
+    })
+}
+
+function queryUrl() {
+    return {
+        url: query_add,
+        headers: {
+            "Accept": "*/*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "zh-cn",
+            "Connection": "keep-alive",
+            "Host": "appapis.dmall.com",
+            "Referer": "https://act.dmall.com/dac/signIn/index.html?dmShowTitleBar=false&dmfrom=wx&bounces=false&dmNeedLogin=true&dmTransStatusBar=true",
+            "Cookie": cookie,
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148Dmall/4.9.0",
+        }
+    }
+}
 
 function showMsg() {
     return new Promise(resolve => {
         if(title){
             $.sub = title
             $.desc = desc
-            $.msg("多点账号"+$.nickName,$.sub,$.desc)
+            $.msg("多点账号:",$.sub,$.desc)
         }
         resolve()
     })
